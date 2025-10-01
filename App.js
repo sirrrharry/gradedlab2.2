@@ -1,20 +1,36 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-export default function App() {
+import { ProjectProvider } from "./context"; 
+import ProjectsScreen from "./screens/Projectsscreen";
+import TasksScreen from "./Screens/Tasksscreen";
+
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function TasksStack() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <Stack.Navigator>
+      <Stack.Screen name="Tasks" component={TasksScreen} />
+    </Stack.Navigator>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default function App() {
+  return (
+    <ProjectProvider>
+      <NavigationContainer>
+        <Tab.Navigator>
+          <Tab.Screen name="Projects" component={ProjectsScreen} />
+          <Tab.Screen
+            name="TasksTab"
+            component={TasksStack}
+            options={{ title: "Tasks" }}
+          />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </ProjectProvider>
+  );
+}
