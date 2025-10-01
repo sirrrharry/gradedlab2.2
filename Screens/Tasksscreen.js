@@ -1,61 +1,63 @@
-import React, { useContext, useEffect, useState } from "react";
-import { View, Text, FlatList, TextInput, Button, Alert } from "react-native";
+import React, { useContext, useState, useEffect } from "react";
+import { View, Text, FlatList, TextInput, TouchableOpacity } from "react-native";
 import { ProjectContext } from "../context";
-import { db } from "../firebase"; 
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { db } from "../firebase";
+import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 
 export default function TasksScreen({ navigation }) {
-  const { selectedProject, setSelectedProject } = useContext(ProjectContext);
+  const { selectedProject } = useContext(ProjectContext);
   const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState("");
+  const [input, setInput] = useState("");
 
   useEffect(() => {
-    if (!selectedProject) return;
+    if (!selectedProject) {
+      navigation.navigate("Projects");
+      return;
+    }
 
-    const projectRef = doc(db, "projects", selectedProject.id);
-
-    const unsubscribe = onSnapshot(projectRef, (docSnap) => {
-      if (!docSnap.exists()) {
-        Alert.alert("Project deleted", "This project was deleted.");
-        setSelectedProject(null);
+   
+    const unsub = onSnapshot(doc(db, "projects", selectedProject.id), (docSnap) => {
+      if (docSnap.exists()) {
+        setTasks(docSnap.data().tasks || []);
+      } else {
         navigation.navigate("Projects");
-        return;
       }
-      const data = docSnap.data();
-      setTasks(data.tasks || []);
     });
 
-    return () => unsubscribe();
+    return () => unsub();
   }, [selectedProject]);
 
   const addTask = async () => {
-    if (newTask.trim() === "") return;
-
-    const projectRef = doc(db, "projects", selectedProject.id);
-    await updateDoc(projectRef, {
-      tasks: arrayUnion({ id: Date.now().toString(), title: newTask }),
-    });
-    setNewTask("");
+    if (input.trim() === "") return;
+    const newTasks = [...tasks, { id: Date.now().toString(), name: input }];
+    await updateDoc(doc(db, "projects", selectedProject.id), { tasks: newTasks });
+    setInput("");
   };
 
-  const deleteTask = async (task) => {
-    const projectRef = doc(db, "projects", selectedProject.id);
-    await updateDoc(projectRef, {
-      tasks: arrayRemove(task),
-    });
+  const deleteTask = async (id) => {
+    const newTasks = tasks.filter((t) => t.id !== id);
+    await updateDoc(doc(db, "projects", selectedProject.id), { tasks: newTasks });
   };
-
-  if (!selectedProject) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text>No project selected</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
-      {tasks.length === 0 && <Text>No tasks found for this project.</Text>}
+      <Text style={{ fontSize: 20, marginBottom: 10 }}>
+        {selectedProject?.name} - Tasks
+      </Text>
+
+      <TextInput
+        value={input}
+        onChangeText={setInput}
+        placeholder="Add new task"
+        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
+      />
+
+      <TouchableOpacity
+        onPress={addTask}
+        style={{ backgroundColor: "lightblue", padding: 10, marginBottom: 20 }}
+      >
+        <Text>Add Task</Text>
+      </TouchableOpacity>
 
       <FlatList
         data={tasks}
@@ -69,19 +71,13 @@ export default function TasksScreen({ navigation }) {
               borderBottomWidth: 1,
             }}
           >
-            <Text>{item.title}</Text>
-            <Button title="Delete" onPress={() => deleteTask(item)} color="red" />
+            <Text>{item.name}</Text>
+            <TouchableOpacity onPress={() => deleteTask(item.id)}>
+              <Text style={{ color: "red" }}>Delete</Text>
+            </TouchableOpacity>
           </View>
         )}
       />
-
-      <TextInput
-        placeholder="New Task"
-        value={newTask}
-        onChangeText={setNewTask}
-        style={{ borderWidth: 1, padding: 10, marginVertical: 10 }}
-      />
-      <Button title="Add Task" onPress={addTask} />
     </View>
   );
 }

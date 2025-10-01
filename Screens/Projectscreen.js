@@ -1,21 +1,11 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useContext } from "react";
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
-import { collection, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
-import { ProjectContext } from "../context"; 
+import { useNavigation } from "@react-navigation/native";
+import { ProjectContext } from "../context";
 
-export default function ProjectsScreen({ navigation }) {
-  const [projects, setProjects] = useState([]);
-  const { setSelectedProject } = useContext(ProjectContext);
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "projects"), (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setProjects(data);
-    });
-
-    return () => unsubscribe();
-  }, []);
+export default function ProjectsScreen() {
+  const { projects, setSelectedProject } = useContext(ProjectContext);
+  const navigation = useNavigation();
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
@@ -24,11 +14,11 @@ export default function ProjectsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
+            style={{ padding: 15, borderBottomWidth: 1 }}
             onPress={() => {
               setSelectedProject(item);
-              navigation.navigate("TasksTab");
+              navigation.navigate("Tasks");
             }}
-            style={{ padding: 15, borderBottomWidth: 1 }}
           >
             <Text style={{ fontSize: 18 }}>{item.name}</Text>
             <Text>{item.tasks?.length || 0} tasks</Text>
