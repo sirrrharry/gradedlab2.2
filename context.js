@@ -8,7 +8,7 @@ export const ProjectProvider = ({ children }) => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
 
-  // fetch projects in real-time
+
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "projects"), (snapshot) => {
       setProjects(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
